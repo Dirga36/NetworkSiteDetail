@@ -88,11 +88,13 @@ function netwside_render_dashboard_page() {
     $sites = get_sites();
     $site_data = [];
     $total_posts = 0;
+    $total_pages = 0;
     $total_visitors = 0;
 
     foreach ($sites as $site) {
         switch_to_blog( $site->blog_id );
         $post_count = wp_count_posts()->publish;
+        $page_count = wp_count_posts('page')->publish;
         $visitor_count = get_option( 'netwside_visitor_count_last_three_months', 0 );
         $site_name = get_bloginfo( 'name' );
         $site_domain = $site->domain;
@@ -104,16 +106,18 @@ function netwside_render_dashboard_page() {
             'domain' => $site_domain,
             'path' => $site_path,
             'post_count' => $post_count,
+            'page_count' => $page_count,
             'visitor_count' => $visitor_count,
             'last_updated_post' => $last_updated_post,
             'last_login_email' => $last_login_email,
         ];
         $total_posts += $post_count;
+        $total_pages += $page_count;
         $total_visitors += $visitor_count;
         restore_current_blog();
     }
     usort($site_data, function($a, $b) {
-        return $b['post_count'] <=> $a['post_count'] ?: $b['visitor_count'] <=> $a['visitor_count'];
+        return $b['post_count'] <=> $a['post_count'] ? $b['page_count'] <=> $a['page_count'] : $b['visitor_count'] <=> $a['visitor_count'];
     });
     // Enqueue Chart.js and inject data chart only on dashboard page
     wp_enqueue_script( 'chartjs', plugins_url( 'assets/js/chart.min.js', __FILE__ ), array(), '4.4.0', true );
@@ -150,6 +154,11 @@ function netwside_render_dashboard_page() {
                 <button onclick="netwside_sortTable(1, 'asc')">🡻</button>
             </th>
             <th>
+                <?php esc_html_e( 'Page Count', 'network-site-details' ); ?>
+                <button onclick="netwside_sortTable(1, 'desc')">🡹</button>
+                <button onclick="netwside_sortTable(1, 'asc')">🡻</button>
+            </th>
+            <th>
                 <?php esc_html_e( 'Visitor Count (Last 3 Months)', 'network-site-details' ); ?>
                 <button onclick="netwside_sortTable(2, 'desc')">🡹</button>
                 <button onclick="netwside_sortTable(2, 'asc')">🡻</button>
@@ -163,6 +172,7 @@ function netwside_render_dashboard_page() {
         <tr>
             <td><a href="<?php echo esc_url( 'https://' . $site['domain'] . $site['path'] ); ?>" target="_blank"><?php echo esc_html( $site['name'] ); ?></a></td>
             <td><?php echo esc_html( $site['post_count'] ); ?></td>
+            <td><?php echo esc_html( $site['page_count'] ); ?></td>
             <td><?php echo esc_html( $site['visitor_count'] ); ?></td>
             <td><?php echo esc_html( $site['last_updated_post'] ); ?></td>
             <td><?php echo esc_html( $site['last_login_email'] ); ?></td>
@@ -193,9 +203,10 @@ function netwside_export_to_excel() {
     // Header
     $sheet->setCellValue('A1', 'Subsite');
     $sheet->setCellValue('B1', 'Post Count');
-    $sheet->setCellValue('C1', 'Visitor Count (Last 3 Months)');
-    $sheet->setCellValue('D1', 'Last Updated Post Date');
-    $sheet->setCellValue('E1', 'Last Login User Email');
+    $sheet->setCellValue('C1', 'Page Count');
+    $sheet->setCellValue('D1', 'Visitor Count (Last 3 Months)');
+    $sheet->setCellValue('E1', 'Last Updated Post Date');
+    $sheet->setCellValue('F1', 'Last Login User Email');
     $row = 2; // Start from the second row
     foreach ($sites as $site) {
         switch_to_blog($site->blog_id);
@@ -206,9 +217,10 @@ function netwside_export_to_excel() {
         $last_login_email = netwside_get_last_login_user_email();
         $sheet->setCellValue("A{$row}", $subsite_name);
         $sheet->setCellValue("B{$row}", $post_count);
-        $sheet->setCellValue("C{$row}", $visitor_count);
-        $sheet->setCellValue("D{$row}", $last_updated_post);
-        $sheet->setCellValue("E{$row}", $last_login_email);
+        $sheet->setCellValue("C{$row}", $page_count);
+        $sheet->setCellValue("D{$row}", $visitor_count);
+        $sheet->setCellValue("E{$row}", $last_updated_post);
+        $sheet->setCellValue("F{$row}", $last_login_email);
         $row++;
         restore_current_blog();
     }
