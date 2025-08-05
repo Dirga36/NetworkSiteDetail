@@ -212,6 +212,7 @@ function netwside_export_to_excel() {
         switch_to_blog($site->blog_id);
         $subsite_name = get_bloginfo('name');
         $post_count = wp_count_posts()->publish;
+        $page_count = wp_count_posts('page')->publish;
         $visitor_count = get_option('netwside_visitor_count_last_three_months', 0);
         $last_updated_post = netwside_get_last_updated_post_date();
         $last_login_email = netwside_get_last_login_user_email();
